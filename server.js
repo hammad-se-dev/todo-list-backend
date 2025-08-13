@@ -21,7 +21,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
+// Connect to MongoDB (refactor)
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -35,7 +35,7 @@ app.use('/api/todos', todoRoutes);
 app.use('/api/users', userRoutes);
 
 
-// Error handling middleware
+// Error handling middleware (refactor)
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
@@ -46,7 +46,7 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use( (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 

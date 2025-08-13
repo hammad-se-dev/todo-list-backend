@@ -1,39 +1,21 @@
 import express from 'express'
-import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { protect, generateToken } from '../middleware/auth.js';
 import sendEmail from '../utils/sendEmail.js';
 import crypto from 'crypto';
+import { 
+  registerSchema, 
+  loginSchema, 
+  forgotPasswordSchema, 
+  resetPasswordSchema, 
+  changePasswordSchema,
+  validateRequest 
+} from '../validations/auth.js';
 
 export const router = express.Router();
 
-router.post('/register', [
-  body('fullname')
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Full name must be between 2 and 100 characters'),
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('profileImageUrl')
-    .optional({ nullable: true, checkFalsy: true })
-    .isURL()
-    .withMessage('Profile image URL must be a valid URL')
-], async (req, res) => {
+router.post('/register', validateRequest(registerSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     const { fullname, email, password, profileImageUrl } = req.body;
 
@@ -81,25 +63,8 @@ router.post('/register', [
 });
 
 
-router.post('/login', [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .notEmpty()
-    .withMessage('Password is required')
-], async (req, res) => {
+router.post('/login', validateRequest(loginSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     const { email, password } = req.body;
 
@@ -166,22 +131,8 @@ router.get('/me', protect, async (req, res) => {
 });
 
 
-router.post('/forgot-password', [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email')
-], async (req, res) => {
+router.post('/forgot-password', validateRequest(forgotPasswordSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     const { email } = req.body;
 
@@ -235,21 +186,8 @@ router.post('/forgot-password', [
 });
 
 
-router.put('/reset-password/:resettoken', [
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
-], async (req, res) => {
+router.put('/reset-password/:resettoken', validateRequest(resetPasswordSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     // Get hashed token
     const resetPasswordToken = crypto
@@ -302,24 +240,8 @@ router.put('/reset-password/:resettoken', [
 });
 
 
-router.put('/change-password', protect, [
-  body('currentPassword')
-    .notEmpty()
-    .withMessage('Current password is required'),
-  body('newPassword')
-    .isLength({ min: 6 })
-    .withMessage('New password must be at least 6 characters long')
-], async (req, res) => {
+router.put('/change-password', protect, validateRequest(changePasswordSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     const { currentPassword, newPassword } = req.body;
 

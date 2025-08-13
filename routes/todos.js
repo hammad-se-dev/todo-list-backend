@@ -1,7 +1,7 @@
 import express from 'express';
-import { body, validationResult } from 'express-validator';
 import Todo from '../models/Todo.js';
 import { protect } from '../middleware/auth.js';
+import { createTodoSchema, updateTodoSchema, validateRequest } from '../validations/todo.js';
 
 const router = express.Router();
 
@@ -109,30 +109,8 @@ router.get('/:id', async (req, res) => {
 // @desc    Create new todo
 // @route   POST /api/todos
 // @access  Private
-router.post('/', [
-  body('title')
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('Title must be between 1 and 200 characters'),
-  body('content')
-    .trim()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage('Content must be between 1 and 1000 characters'),
-  body('status')
-    .optional()
-    .isIn(['pending', 'completed'])
-    .withMessage('Status must be either pending or completed')
-], async (req, res) => {
+router.post('/', validateRequest(createTodoSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     const { title, content, status = 'pending' } = req.body;
 
@@ -161,32 +139,8 @@ router.post('/', [
 // @desc    Update todo
 // @route   PUT /api/todos/:id
 // @access  Private
-router.put('/:id', [
-  body('title')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('Title must be between 1 and 200 characters'),
-  body('content')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage('Content must be between 1 and 1000 characters'),
-  body('status')
-    .optional()
-    .isIn(['pending', 'completed'])
-    .withMessage('Status must be either pending or completed')
-], async (req, res) => {
+router.put('/:id', validateRequest(updateTodoSchema), async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: errors.array()
-      });
-    }
 
     let todo = await Todo.findOne({
       _id: req.params.id,

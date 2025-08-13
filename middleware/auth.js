@@ -16,6 +16,7 @@ const protect = async (req, res, next) => {
 
       // Get user from token
       req.user = await User.findById(decoded.id).select('-password');
+      req.atif="atif ahmed"
 
       if (!req.user) {
         return res.status(401).json({
