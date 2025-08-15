@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import { protect, generateToken } from '../middleware/auth.js';
 import sendEmail from '../utils/sendEmail.js';
 import crypto from 'crypto';
+import asyncHandler from '../utils/asyncHandler.js';
 import { 
   registerSchema, 
   loginSchema, 
@@ -14,102 +15,82 @@ import {
 
 export const router = express.Router();
 
-router.post('/register', validateRequest(registerSchema), async (req, res) => {
-  try {
+router.post('/register', validateRequest(registerSchema), asyncHandler(async (req, res) => {
+  const { fullname, email, password, profileImageUrl } = req.body;
 
-    const { fullname, email, password, profileImageUrl } = req.body;
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
-
-    // Create user
-    const user = await User.create({
-      fullname,
-      email,
-      password,
-      profileImageUrl
-    });
-
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: {
-          id: user._id,
-          fullname: user.fullname,
-          email: user.email,
-          profileImageUrl: user.profileImageUrl
-        },
-        token
-      }
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({
       success: false,
-      message: 'Error registering user',
-      error: error.message
+      message: 'User with this email already exists'
     });
   }
-});
 
+  // Create user
+  const user = await User.create({
+    fullname,
+    email,
+    password,
+    profileImageUrl
+  });
 
-router.post('/login', validateRequest(loginSchema), async (req, res) => {
-  try {
+  // Generate token
+  const token = generateToken(user._id);
 
-    const { email, password } = req.body;
-
-    // Check if user exists and password is correct
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+  res.status(201).json({
+    success: true,
+    message: 'User registered successfully',
+    data: {
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl
+      },
+      token
     }
+  });
+}));
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
 
-    // Generate token
-    const token = generateToken(user._id);
+router.post('/login', validateRequest(loginSchema), asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user._id,
-          fullname: user.fullname,
-          email: user.email,
-          profileImageUrl: user.profileImageUrl
-        },
-        token
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
+  // Check if user exists and password is correct
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    return res.status(401).json({
       success: false,
-      message: 'Error logging in',
-      error: error.message
+      message: 'Invalid credentials'
     });
   }
-});
+
+  const isMatch = await user.matchPassword(password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
+
+  // Generate token
+  const token = generateToken(user._id);
+
+  res.json({
+    success: true,
+    message: 'Login successful',
+    data: {
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl
+      },
+      token
+    }
+  });
+}));
 
 
 router.get('/me', protect, async (req, res) => {
