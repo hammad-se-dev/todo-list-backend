@@ -1,16 +1,21 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Load environment variables
+dotenv.config();
+
+// Import database connection
+import connectDB from './db/connection.js';
+
+// Import middleware
+import { errorHandler } from './middleware/errorHandler.js';
 
 // Import routes
 import { router as authRoutes } from './routes/auth.js';
 import { router as todoRoutes } from './routes/todos.js';
 import { router as userRoutes } from './routes/users.js';
 
-dotenv.config();
 const app = express();
 
 // Middleware
@@ -22,33 +27,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/todos', todoRoutes);
 app.use('/api/users', userRoutes);
 
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
+// 404 handler - must be before error handler
+app.use('*', (req, res) => {
+  res.status(404).json({ 
     success: false, 
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    message: 'Route not found' 
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
+// Error handling middleware - must be last
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
